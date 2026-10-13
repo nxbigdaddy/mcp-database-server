@@ -1,0 +1,117 @@
+name: mcp-database-server
+tags:
+  - 开发工具
+  - 数据库
+  - AI 工具
+short_desc: MCP 数据库服务器 - 为 AI 开发平台提供数据库连接服务
+description: |
+  MCP Database Server 是一个基于 Model Context Protocol 的数据库连接服务。
+  
+  功能特性:
+  - 支持 MySQL、PostgreSQL、SQL Server、Oracle、SQLite
+  - 提供 Web UI 管理界面
+  - 标准 MCP 协议接口
+  - 完整的审计日志
+  - 连接池管理
+  - 安全控制
+  
+  适用场景:
+  - AI 开发平台数据库连接
+  - 内部数据库管理工具
+  - 数据库查询服务
+
+type: application
+version: 1.0.0
+crossVersionUpdate: true
+require: docker-compose >= 2.0
+
+versions:
+  - version: 1.0.0
+    type: docker
+    docker_compose: |
+      services:
+        mcp-db-server:
+          image: registry.cn-beijing.aliyuncs.com/mcp-svr/mcp-database-server:1.0.0
+          container_name: mcp-database-server-${RANDOM_PORT}
+          ports:
+            - "${WEB_PORT}:3000"
+            - "${MCP_PORT}:3001"
+          volumes:
+            - ./data:/app/data
+          environment:
+            - NODE_ENV=production
+            - SYSTEM_DB_PATH=/app/data/system.db
+            - WEB_UI_ENABLED=true
+            - MCP_TRANSPORT=${MCP_TRANSPORT}
+            - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+            - LOG_LEVEL=${LOG_LEVEL}
+          networks:
+            - mcp-network
+          restart: unless-stopped
+          healthcheck:
+            test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 30s
+      
+      networks:
+        mcp-network:
+          driver: bridge
+
+    params:
+      - key: WEB_PORT
+        label: Web UI 端口
+        type: number
+        default: 3000
+        required: true
+        rule: "^[0-9]{1,5}$"
+      
+      - key: MCP_PORT
+        label: MCP 服务端口
+        type: number
+        default: 3001
+        required: true
+        rule: "^[0-9]{1,5}$"
+      
+      - key: MCP_TRANSPORT
+        label: MCP 传输方式
+        type: select
+        default: sse
+        required: true
+        options:
+          - value: sse
+            label: SSE (推荐 - HTTP 长连接)
+          - value: stdio
+            label: Stdio (本地进程调用)
+      
+      - key: ENCRYPTION_KEY
+        label: 密码加密密钥
+        type: text
+        default: ""
+        required: false
+        description: "32 位随机字符串，用于加密数据库密码。留空则自动生成"
+      
+      - key: LOG_LEVEL
+        label: 日志级别
+        type: select
+        default: info
+        required: true
+        options:
+          - value: error
+            label: ERROR - 仅错误日志
+          - value: warn
+            label: WARN - 警告及以上
+          - value: info
+            label: INFO - 信息及以上 (推荐)
+          - value: debug
+            label: DEBUG - 调试日志 (开发环境)
+
+    containers:
+      - name: mcp-db-server
+        image: registry.cn-beijing.aliyuncs.com/mcp-svr/mcp-database-server:1.0.0
+        ports:
+          - "${WEB_PORT}:3000"
+          - "${MCP_PORT}:3001"
+        volumes:
+          - ./data:/app/data

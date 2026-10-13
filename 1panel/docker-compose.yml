@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  mcp-db-server:
+    image: registry.cn-beijing.aliyuncs.com/mcp-svr/mcp-database-server:1.0.0
+    container_name: mcp-database-server
+    ports:
+      - "${WEB_PORT}:3000"
+      - "${MCP_PORT}:3001"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - SYSTEM_DB_PATH=/app/data/system.db
+      - WEB_UI_ENABLED=true
+      - MCP_TRANSPORT=${MCP_TRANSPORT}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

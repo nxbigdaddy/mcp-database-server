@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  mcp-db-server:
+    image: registry.cn-beijing.aliyuncs.com/mcp-svr/mcp-database-server:latest
+    container_name: mcp-database-server
+    ports:
+      - "${PORT:-3000}:3000"
+      - "${MCP_PORT:-3001}:3001"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - SYSTEM_DB_PATH=/app/data/system.db
+      - WEB_UI_ENABLED=true
+      - MCP_TRANSPORT=${MCP_TRANSPORT:-sse}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - PORT=${PORT:-3000}
+      - MCP_PORT=${MCP_PORT:-3001}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - AUDIT_ENABLED=${AUDIT_ENABLED:-true}
+      - AUDIT_RETENTION_DAYS=${AUDIT_RETENTION_DAYS:-30}
+      - MAX_QUERY_ROWS=${MAX_QUERY_ROWS:-10000}
+      - DEFAULT_QUERY_LIMIT=${DEFAULT_QUERY_LIMIT:-100}
+      - QUERY_TIMEOUT_MS=${QUERY_TIMEOUT_MS:-30000}
+      - API_KEY=YOUR_SECRET}
+      - IP_WHITELIST=${IP_WHITELIST}
+      - ALLOW_DDL=${ALLOW_DDL:-false}
+      - POOL_MIN=${POOL_MIN:-2}
+      - POOL_MAX=${POOL_MAX:-10}
+      - POOL_IDLE_TIMEOUT=${POOL_IDLE_TIMEOUT:-30000}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
